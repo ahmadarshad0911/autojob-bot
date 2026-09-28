@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AutoJob Live - Autonomous Job Discovery & Cover Letter Studio</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen p-6 antialiased">
+  <div class="max-w-6xl mx-auto space-y-6">
+
+    <!-- Top Bar & Tabs -->
+    <header class="flex flex-wrap justify-between items-center bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-lg gap-4">
+      <div>
+        <h1 class="text-xl font-black text-emerald-400 tracking-wide flex items-center gap-2">
+          <span>⚡</span> AutoJob Workstation
+        </h1>
+        <p class="text-xs text-slate-400 mt-0.5">Autonomous Search, 1-Page ATS Resumes & Executive Cover Letter Studio</p>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div class="flex items-center gap-2 bg-slate-950 p-1 rounded-lg border border-slate-800 text-xs">
+        <button onclick="switchTab('jobs')" id="tabBtnJobs" class="px-3 py-1.5 rounded-md font-medium bg-emerald-600 text-white transition">
+          💼 Jobs & 1-Page Resumes
+        </button>
+        <button onclick="switchTab('coverletter')" id="tabBtnCL" class="px-3 py-1.5 rounded-md font-medium text-slate-400 hover:text-slate-200 transition">
+          ✍️ Cover Letter Studio
+        </button>
+      </div>
+
+      <div class="flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800">
+        <span class="text-xs text-slate-400 font-medium">User:</span>
+        <input type="text" id="activeUser" value="ahmad_arshad" class="bg-transparent text-xs text-emerald-400 font-mono focus:outline-none w-28" />
+      </div>
+    </header>
+
+    <!-- Global Notification Banner -->
+    <div id="statusNotification" class="hidden p-3 rounded-lg text-xs font-mono transition-all"></div>
+
+    <!-- ==================== TAB 1: JOBS & RESUMES ==================== -->
+    <div id="tabJobsContent" class="space-y-6">
+      <!-- Search Filter Bar -->
+      <section class="bg-slate-900 p-5 rounded-xl border border-slate-800 shadow-md space-y-4">
+        <div class="flex justify-between items-center border-b border-slate-800 pb-2.5">
+          <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-200">Autonomous Filter Controls</h2>
+          <span class="text-[10px] text-emerald-400 font-mono flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Auto-Sync
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
+          <div class="sm:col-span-2">
+            <label class="block text-slate-400 mb-1">Target Roles / Acronyms (e.g. SQA, SDET, Full Stack)</label>
+            <input type="text" id="cfgTitles" placeholder="e.g. SQA" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500 font-mono text-xs" />
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">City</label>
+            <input type="text" id="cfgCity" value="Lahore" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500 text-xs" />
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Seniority</label>
+            <select id="cfgLevels" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-2 text-slate-200 focus:outline-none focus:border-emerald-500 text-xs">
+              <option value="associate">Associate / Entry-Level</option>
+              <option value="fresher">Fresher</option>
+              <option value="intermediate">Intermediate</option>
+              <option value="expert">Expert / Senior</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex gap-3 pt-2">
+          <button onclick="executeSeamlessDiscovery()" id="btnDiscover" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2 px-4 rounded-lg text-xs transition flex justify-center items-center gap-2">
+            <span>⚡ Find Jobs (Auto-Purge Old)</span>
+          </button>
+          <button onclick="triggerTailoring()" id="btnTailor" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2 px-4 rounded-lg text-xs transition flex justify-center items-center gap-2">
+            <span>🎯 Auto-Tailor 1-Page PDFs</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Clean Jobs Ledger (Table mein se extra Cover Letter buttons saaf) -->
+      <section class="bg-slate-900 p-5 rounded-xl border border-slate-800 shadow-md space-y-3">
+        <div class="flex justify-between items-center">
+          <div>
+            <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-200">Active Job Opportunities</h2>
+            <p class="text-[11px] text-slate-400" id="totalCountDisplay">Total Jobs: 0</p>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto rounded-lg border border-slate-800">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr class="bg-slate-950 text-slate-400 border-b border-slate-800">
+                <th class="py-3 px-3">Job ID</th>
+                <th class="py-3 px-3">Job Title</th>
+                <th class="py-3 px-3">Company</th>
+                <th class="py-3 px-3">Location</th>
+                <th class="py-3 px-3">Portal Link</th>
+                <th class="py-3 px-3">Status</th>
+                <th class="py-3 px-3">Tailored PDF</th>
+              </tr>
+            </thead>
+            <tbody id="appTableBody" class="divide-y divide-slate-800 bg-slate-900 font-normal">
+              <tr>
+                <td colspan="7" class="py-8 text-center text-slate-500">No jobs active. Enter a role above and press Find Jobs.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- ==================== TAB 2: STANDALONE COVER LETTER STUDIO ==================== -->
+    <div id="tabCLContent" class="hidden space-y-6">
+      <section class="bg-slate-900 p-6 rounded-xl border border-slate-800 shadow-md space-y-5">
+        <div class="border-b border-slate-800 pb-3">
+          <h2 class="text-sm font-bold text-emerald-400">Executive Technical Cover Letter Generator</h2>
+          <p class="text-xs text-slate-400 mt-1">Paste a Job Description OR upload a screenshot. The Director-level AI analyzes the requirements against your master profile and drafts a high-conversion letter.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <!-- Option A: Paste Text -->
+          <div class="space-y-2">
+            <label class="block text-xs font-medium text-slate-300">Option A: Paste Job Description Text</label>
+            <textarea id="standaloneJdText" placeholder="Paste the complete job description, requirements, or qualifications here..." class="w-full h-44 bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs text-slate-200 font-mono leading-relaxed focus:outline-none focus:border-emerald-500"></textarea>
+          </div>
+
+          <!-- Option B: Upload Screenshot -->
+          <div class="space-y-2 flex flex-col justify-between">
+            <div>
+              <label class="block text-xs font-medium text-slate-300">Option B: Upload Job Posting Screenshot</label>
+              <p class="text-[11px] text-slate-500 mb-2">Groq Vision reads the image and extracts skills, responsibilities, and company details.</p>
+              <input type="file" id="standaloneScreenshot" accept="image/*" class="w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-slate-200 hover:file:bg-slate-700 cursor-pointer" />
+            </div>
+
+            <button onclick="generateStandaloneCoverLetter()" id="btnGenerateCL" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2.5 rounded-lg text-xs transition flex justify-center items-center gap-2 mt-4">
+              <span>🚀 Draft High-Impact Cover Letter</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Result Box -->
+        <div id="clResultArea" class="hidden space-y-3 pt-4 border-t border-slate-800">
+          <div class="flex justify-between items-center">
+            <div>
+              <span id="clExtractedHeader" class="text-xs font-bold text-emerald-400"></span>
+              <p id="clKeywords" class="text-[11px] text-slate-400 font-mono mt-0.5"></p>
+            </div>
+            <button onclick="copyGeneratedCL()" id="btnCopyCL" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-3.5 py-1.5 rounded-lg transition font-medium">
+              📋 Copy Cover Letter
+            </button>
+          </div>
+          <textarea id="clOutputText" readonly class="w-full h-80 bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs text-slate-200 font-mono leading-relaxed focus:outline-none"></textarea>
+        </div>
+      </section>
+    </div>
+
+  </div>
+
+  <script>
+    let pollInterval = null;
+
+    function getUsername() {
+      return document.getElementById("activeUser").value.trim();
+    }
+
+    function showNotify(msg, isSuccess = true) {
+      const banner = document.getElementById("statusNotification");
+      banner.className = `p-3 rounded-lg text-xs font-mono border ${
+        isSuccess ? "bg-emerald-950/80 border-emerald-800 text-emerald-300" : "bg-red-950/80 border-red-800 text-red-300"
+      }`;
+      banner.innerHTML = msg;
+      banner.classList.remove("hidden");
+    }
+
+    function switchTab(tab) {
+      const jobsView = document.getElementById("tabJobsContent");
+      const clView = document.getElementById("tabCLContent");
+      const btnJobs = document.getElementById("tabBtnJobs");
+      const btnCL = document.getElementById("tabBtnCL");
+
+      if (tab === 'jobs') {
+        jobsView.classList.remove("hidden");
+        clView.classList.add("hidden");
+        btnJobs.className = "px-3 py-1.5 rounded-md font-medium bg-emerald-600 text-white transition";
+        btnCL.className = "px-3 py-1.5 rounded-md font-medium text-slate-400 hover:text-slate-200 transition";
+      } else {
+        jobsView.classList.add("hidden");
+        clView.classList.remove("hidden");
+        btnCL.className = "px-3 py-1.5 rounded-md font-medium bg-emerald-600 text-white transition";
+        btnJobs.className = "px-3 py-1.5 rounded-md font-medium text-slate-400 hover:text-slate-200 transition";
+      }
+    }
+
+    async function loadUserData() {
+      const user = getUsername();
+      if (!user) return;
+      try {
+        const res = await fetch(`/api/users/${user}/config?t=${Date.now()}`);
+        if (res.ok) {
+          const cfg = await res.json();
+          document.getElementById("cfgTitles").value = (cfg.job_titles || []).join(", ");
+          document.getElementById("cfgCity").value = cfg.city || "Lahore";
+          document.getElementById("cfgLevels").value = (cfg.experience_levels || ["associate"])[0];
+        }
+      } catch (err) {
+        console.warn(err);
+      }
+      fetchApplications();
+    }
+
+    async function executeSeamlessDiscovery() {
+      const user = getUsername();
+      const btn = document.getElementById("btnDiscover");
+      const tbody = document.getElementById("appTableBody");
+
+      tbody.innerHTML = '<tr><td colspan="7" class="py-8 text-center text-amber-400 font-mono animate-pulse">Purging previous records and scraping live companies...</td></tr>';
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="animate-spin">🌀</span> Discovering...';
+
+      const payload = {
+        job_titles: document.getElementById("cfgTitles").value.split(",").map(s => s.trim()).filter(Boolean),
+        experience_levels: [document.getElementById("cfgLevels").value],
+        workplace_type: "Any",
+        country: "Pakistan",
+        city: document.getElementById("cfgCity").value.trim(),
+        daily_application_limit: 15,
+        min_match_score: 65.0
+      };
+
+      await fetch(`/api/users/${user}/config`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      try {
+        const res = await fetch(`/api/pipeline/discover/${user}`, { method: "POST" });
+        const data = await res.json();
+        if (res.ok) {
+          showNotify(`✓ Discovered and saved ${data.saved_jobs} jobs matching the query!`);
+        }
+      } catch (err) {
+        showNotify(`✗ Error: ${err.message}`, false);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>⚡ Find Jobs (Auto-Purge Old)</span>';
+        await fetchApplications();
+      }
+    }
+
+    async function triggerTailoring() {
+      const user = getUsername();
+      const btn = document.getElementById("btnTailor");
+      btn.disabled = true;
+      btn.innerHTML = '<span class="animate-spin">🌀</span> Tailoring...';
+      showNotify("Building verified 1-page ATS resumes...");
+
+      try {
+        const res = await fetch(`/api/pipeline/tailor/${user}`, { method: "POST" });
+        const data = await res.json();
+        if (res.ok) {
+          showNotify(`✓ Tailoring Finished! Generated: ${data.tailored} 1-Page PDFs.`);
+          await fetchApplications();
+        }
+      } catch (e) {
+        showNotify(`✗ Tailor Error: ${e.message}`, false);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>🎯 Auto-Tailor 1-Page PDFs</span>';
+      }
+    }
+
+    async function fetchApplications() {
+      const user = getUsername();
+      const tbody = document.getElementById("appTableBody");
+      const countLabel = document.getElementById("totalCountDisplay");
+
+      try {
+        const res = await fetch(`/api/dashboard/${user}?t=${Date.now()}`);
+        const data = await res.json();
+
+        if (!data.applications || data.applications.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" class="py-8 text-center text-slate-500">No active job listings found for this query.</td></tr>';
+          countLabel.innerText = "Total Jobs: 0";
+          return;
+        }
+
+        countLabel.innerText = `Total Jobs: ${data.applications.length}`;
+
+        tbody.innerHTML = data.applications.map(app => {
+          let link = "#";
+          let label = "Portal";
+          if (app.raw_description) {
+            if (app.raw_description.includes("Official Career Portal: ")) {
+              link = app.raw_description.split("Official Career Portal: ")[1].split("\n")[0].trim();
+              label = "Career Portal";
+            } else if (app.raw_description.includes("Job Listing Ref: ")) {
+              link = app.raw_description.split("Job Listing Ref: ")[1].split("\n")[0].trim();
+              label = "Listing Ref";
+            }
+          }
+
+          const resumeBtn = app.tailored_resume_path
+            ? `<a href="/api/resumes/download/${app.job_id}?t=${Date.now()}" target="_blank" class="px-2.5 py-1 rounded text-[11px] bg-emerald-600 hover:bg-emerald-500 text-white font-medium inline-block">Download PDF</a>`
+            : `<span class="text-slate-500 text-[11px] italic">Ready to tailor</span>`;
+
+          return `
+            <tr class="hover:bg-slate-850 transition">
+              <td class="py-2.5 px-3 font-mono text-slate-400 text-[11px]">${app.job_id}</td>
+              <td class="py-2.5 px-3 font-medium text-slate-200">${app.title}</td>
+              <td class="py-2.5 px-3 text-slate-300 font-semibold">${app.company}</td>
+              <td class="py-2.5 px-3 text-slate-400">${app.location || '-'}</td>
+              <td class="py-2.5 px-3">
+                <a href="${link}" target="_blank" class="text-emerald-400 hover:underline truncate max-w-[150px] inline-block">
+                  ${label} ↗
+                </a>
+              </td>
+              <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded text-[10px] bg-slate-800 text-slate-300 border border-slate-700">${app.status}</span></td>
+              <td class="py-2.5 px-3">${resumeBtn}</td>
+            </tr>
+          `;
+        }).join("");
+
+      } catch (err) {
+        tbody.innerHTML = '<tr><td colspan="7" class="py-8 text-center text-red-400">Server offline.</td></tr>';
+      }
+    }
+
+    // Standalone Cover Letter Submission
+    async function generateStandaloneCoverLetter() {
+      const user = getUsername();
+      const textVal = document.getElementById("standaloneJdText").value.trim();
+      const fileInput = document.getElementById("standaloneScreenshot");
+      const btn = document.getElementById("btnGenerateCL");
+      const resultArea = document.getElementById("clResultArea");
+
+      if (!textVal && (!fileInput.files || !fileInput.files[0])) {
+        alert("Please paste JD text or upload a screenshot.");
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="animate-spin">🌀</span> Analyzing & Drafting...';
+      showNotify("Director AI is analyzing requirements and generating a targeted cover letter...");
+
+      const fd = new FormData();
+      fd.append("username", user);
+      if (textVal) fd.append("jd_text", textVal);
+      if (fileInput.files[0]) fd.append("screenshot", fileInput.files[0]);
+
+      try {
+        const res = await fetch("/api/cover-letter/standalone", {
+          method: "POST",
+          body: fd
+        });
+        const data = await res.json();
+        if (res.ok) {
+          const cl = data.result;
+          document.getElementById("clExtractedHeader").innerText = `${cl.extracted_role} @ ${cl.extracted_company}`;
+          document.getElementById("clKeywords").innerText = `Targeted Keywords: ${cl.targeted_keywords.join(" • ")}`;
+          document.getElementById("clOutputText").value = cl.cover_letter_text;
+          resultArea.classList.remove("hidden");
+          showNotify("✓ High-impact technical cover letter drafted successfully!");
+        } else {
+          showNotify(`✗ Error: ${data.detail}`, false);
+        }
+      } catch (e) {
+        showNotify(`✗ Network error: ${e.message}`, false);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>🚀 Draft High-Impact Cover Letter</span>';
+      }
+    }
+
+    function copyGeneratedCL() {
+      const box = document.getElementById("clOutputText");
+      box.select();
+      navigator.clipboard.writeText(box.value);
+      const btn = document.getElementById("btnCopyCL");
+      btn.innerText = "✓ Copied!";
+      setTimeout(() => { btn.innerText = "📋 Copy Cover Letter"; }, 2000);
+    }
+
+    window.onload = () => {
+      loadUserData();
+      pollInterval = setInterval(fetchApplications, 3000);
+    };
+  </script>
+</body>
+</html>
